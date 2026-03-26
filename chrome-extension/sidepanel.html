@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ModelMirror</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Barlow:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0a0e14;
+      --bg2:       #0f1621;
+      --bg3:       #141d2a;
+      --bg4:       #1a2535;
+      --border:    #1e3340;
+      --border2:   #2a4555;
+      --text:      #FFFFFF;
+      --text2:     #FFFFFF;
+      --muted:     #5a7a8a;
+      --muted2:    #7a9aaa;
+      --primary:   #00C6CF;
+      --primary-d: #00a8b0;
+      --primary-g: linear-gradient(135deg,#00a8b0,#00C6CF);
+      --green:     #7FD1AE;
+      --orange:    #7FD1AE;
+      --red:       #FF6B7A;
+      --purple:    #7FD1AE;
+      --yellow:    #7FD1AE;
+      --cyan:      #00C6CF;
+      --mono:      'IBM Plex Mono', monospace;
+      --sans:      'Barlow', sans-serif;
+      --radius:    6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 13px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--bg);
+      position: relative;
+    }
+
+    #header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary) 40%, var(--purple) 70%, transparent);
+      opacity: 0.4;
+    }
+
+    .logo { display: flex; align-items: center; gap: 9px; }
+
+    .logo-mark {
+      width: 24px; height: 24px;
+      background: var(--primary-g);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 900; color: #fff;
+      font-family: var(--sans);
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .logo-mark::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.22) 0%, transparent 60%);
+    }
+
+    .logo-text {
+      font-size: 13px; font-weight: 900;
+      letter-spacing: 3px;
+      color: var(--text2);
+    }
+
+    .logo-version {
+      font-size: 9px;
+      font-family: var(--mono);
+      color: var(--muted);
+      margin-left: 1px;
+      align-self: flex-end;
+      margin-bottom: 1px;
+    }
+
+    #health-btn {
+      background: none;
+      border: 1px solid var(--border2);
+      color: var(--muted2);
+      border-radius: var(--radius);
+      padding: 3px 9px;
+      font-size: 10px;
+      font-family: var(--mono);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    #health-btn:hover { border-color: var(--green); color: var(--green); }
+
+    .dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--muted);
+      transition: all 0.3s;
+    }
+    .dot.online  { background: var(--green); box-shadow: 0 0 5px var(--green); }
+    .dot.offline { background: var(--red); }
+
+    /* ── Tabs ── */
+    #tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px 4px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
+    .tab:hover { color: var(--muted2); }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+    .tab-panel.active { display: flex; }
+
+    /* ── Analyze Panel ── */
+    #panel-analyze {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      padding: 10px 11px 11px;
+      gap: 7px;
+    }
+
+    /* ── Selection Banner ── */
+    #selection-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: rgba(46,204,135,0.07);
+      border: 1px solid rgba(46,204,135,0.25);
+      border-left: 3px solid var(--green);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      flex-shrink: 0;
+    }
+    #selection-banner.visible { display: flex; }
+
+    .selection-icon { font-size: 13px; flex-shrink: 0; }
+    .selection-info { flex: 1; min-width: 0; }
+    .selection-label {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--green); margin-bottom: 2px;
+      font-family: var(--mono);
+    }
+    .selection-preview {
+      font-size: 10px; font-family: var(--mono);
+      color: var(--muted2);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .selection-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    .sel-btn {
+      padding: 3px 8px; border-radius: 4px;
+      font-size: 10px; font-family: var(--mono); font-weight: 600;
+      cursor: pointer; transition: all 0.15s; border: 1px solid;
+    }
+    .sel-btn-use {
+      background: rgba(46,204,135,0.12);
+      border-color: rgba(46,204,135,0.35);
+      color: var(--green);
+    }
+    .sel-btn-use:hover { background: rgba(46,204,135,0.22); }
+    .sel-btn-dismiss {
+      background: transparent; border-color: var(--border2); color: var(--muted);
+    }
+    .sel-btn-dismiss:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── Top row: grab + lang ── */
+    #top-row {
+      display: flex;
+      gap: 6px;
+      align-items: stretch;
+      flex-shrink: 0;
+    }
+
+    #grab-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(79,140,255,0.07);
+      border: 1px dashed rgba(79,140,255,0.3);
+      border-radius: var(--radius);
+      color: var(--primary);
+      font-size: 10.5px;
+      font-family: var(--mono);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.3px;
+    }
+    #grab-btn:hover {
+      background: rgba(79,140,255,0.12);
+      border-color: rgba(79,140,255,0.55);
+    }
+    #grab-btn:active { transform: scale(0.99); }
+
+    .grab-pulse {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--primary);
+      animation: pulse 1.8s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.35; transform: scale(0.65); }
+    }
+
+    #lang-select {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      color: var(--muted2);
+      border-radius: var(--radius);
+      padding: 0 8px;
+      font-size: 10px;
+      font-family: var(--mono);
+      outline: none;
+      cursor: pointer;
+      min-width: 80px;
+    }
+    #lang-select:focus { border-color: var(--primary); color: var(--text); }
+
+    /* ── Editor ── */
+    #editor-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+    }
+
+    #editor {
+      width: 100%; height: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 9px 11px 22px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.65;
+      color: var(--text);
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+      tab-size: 2;
+    }
+    #editor:focus { border-color: var(--border2); }
+    #editor::placeholder { color: var(--muted); }
+
+    #char-count {
+      position: absolute;
+      bottom: 6px; right: 9px;
+      font-size: 9.5px; font-family: var(--mono);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* ── Action buttons ── */
+    #actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .action-btn {
+      padding: 7px 4px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .action-btn:disabled { opacity: 0.4; cursor: wait; transform: none !important; }
+    .action-btn:not(:disabled):hover { transform: translateY(-1px); filter: brightness(1.15); }
+    .action-btn:not(:disabled):active { transform: translateY(0); }
+
+    .btn-explain  {
+      background: rgba(79,140,255,0.11); border-color: rgba(79,140,255,0.28); color: #7aadff;
+    }
+    .btn-refactor {
+      background: rgba(46,204,135,0.09); border-color: rgba(46,204,135,0.26); color: #4dcf9a;
+    }
+    .btn-optimize {
+      background: rgba(245,154,58,0.09); border-color: rgba(245,154,58,0.26); color: #f5a84a;
+    }
+    .btn-tests {
+      background: rgba(155,114,240,0.09); border-color: rgba(155,114,240,0.26); color: #b48cf5;
+    }
+    .btn-bugs {
+      background: rgba(240,96,96,0.08); border-color: rgba(240,96,96,0.26); color: #f07070;
+      font-size: 9px;
+    }
+
+    /* ── Status ── */
+    #status {
+      font-size: 10px; font-family: var(--mono);
+      color: var(--muted);
+      min-height: 14px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 6px;
+    }
+    #status.loading { color: var(--primary); }
+    #status.ok      { color: var(--green); }
+    #status.error   { color: var(--red); }
+
+    .spinner {
+      width: 9px; height: 9px;
+      border: 1.5px solid var(--border2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none; flex-shrink: 0;
+    }
+    .loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Result ── */
+    #result {
+      flex: 1.4;
+      min-height: 0;
+      overflow-y: auto;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 11px;
+    }
+    #result::-webkit-scrollbar { width: 4px; }
+    #result::-webkit-scrollbar-track { background: transparent; }
+    #result::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    .placeholder-text {
+      color: var(--muted);
+      font-size: 10.5px; font-family: var(--mono);
+      text-align: center;
+      padding: 18px 0;
+      line-height: 1.8;
+    }
+
+    /* Result title */
+    .result-title {
+      font-size: 12px; font-weight: 700;
+      color: var(--text2);
+      margin-bottom: 10px;
+      font-family: var(--sans);
+      line-height: 1.4;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Fields */
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field-label {
+      font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--muted); margin-bottom: 4px;
+      display: flex; align-items: center; gap: 5px;
+      font-family: var(--mono);
+    }
+
+    .field-value {
+      font-size: 11.5px; line-height: 1.65;
+      color: var(--text); white-space: pre-wrap;
+      font-family: var(--sans);
+    }
+
+    .field-value.explanation-text {
+      font-family: var(--mono); font-size: 10.5px;
+      color: var(--muted2); line-height: 1.8;
+    }
+
+    .why-text {
+      font-size: 10.5px; font-family: var(--mono);
+      color: var(--cyan); line-height: 1.6;
+    }
+
+    .field-value.code-block {
+      font-family: var(--mono);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 9px 11px; font-size: 11px;
+    }
+
+    .code-wrap { position: relative; }
+    .copy-btn {
+      position: absolute; top: 5px; right: 5px;
+      background: var(--bg4); border: 1px solid var(--border2);
+      border-radius: 4px; padding: 2px 7px;
+      font-size: 9px; font-family: var(--mono); color: var(--muted2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .copy-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+    .field-divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+    /* ── Bug items ── */
+    .bugs-list { display: flex; flex-direction: column; gap: 7px; }
+
+    .bug-item {
+      background: rgba(240,96,96,0.05);
+      border: 1px solid rgba(240,96,96,0.18);
+      border-left: 2px solid var(--red);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+    }
+    .bug-item.sev-medium { background: rgba(245,154,58,0.05); border-color: rgba(245,154,58,0.18); border-left-color: var(--orange); }
+    .bug-item.sev-low    { background: rgba(240,201,74,0.05); border-color: rgba(240,201,74,0.18); border-left-color: var(--yellow); }
+    .bug-item.sev-info   { background: rgba(79,140,255,0.05); border-color: rgba(79,140,255,0.18); border-left-color: var(--primary); }
+
+    .bug-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+
+    .bug-severity {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      font-family: var(--mono); padding: 1px 5px; border-radius: 3px;
+    }
+    .sev-high   .bug-severity { color: var(--red);    background: rgba(240,96,96,0.12); }
+    .sev-medium .bug-severity { color: var(--orange); background: rgba(245,154,58,0.12); }
+    .sev-low    .bug-severity { color: var(--yellow); background: rgba(240,201,74,0.12); }
+    .sev-info   .bug-severity { color: var(--primary);background: rgba(79,140,255,0.12); }
+
+    .bug-type { font-size: 10.5px; font-weight: 700; color: var(--text2); font-family: var(--sans); }
+    .bug-desc { font-size: 10.5px; font-family: var(--mono); color: var(--muted2); line-height: 1.6; margin-bottom: 5px; }
+
+    .bug-fix-wrap { margin-top: 4px; }
+    .bug-fix-label {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--green); opacity: 0.75;
+      margin-bottom: 3px; font-family: var(--mono);
+    }
+    .bug-fix {
+      font-size: 10px; font-family: var(--mono); color: var(--green);
+      background: rgba(46,204,135,0.06);
+      border: 1px solid rgba(46,204,135,0.18);
+      border-radius: 4px; padding: 4px 7px;
+      white-space: pre-wrap; line-height: 1.55;
+    }
+
+    /* ── Error box ── */
+    .error-box {
+      background: rgba(240,96,96,0.07);
+      border: 1px solid rgba(240,96,96,0.25);
+      border-left: 3px solid var(--red);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+    }
+    .error-box .error-title { color: var(--red); font-weight: 700; font-size: 11px; margin-bottom: 5px; font-family: var(--mono); }
+    .error-box .error-msg   { color: var(--muted2); font-family: var(--mono); font-size: 10.5px; line-height: 1.65; }
+
+    /* ── Settings ── */
+    #panel-settings { padding: 12px; overflow-y: auto; flex: 1; }
+    #panel-settings::-webkit-scrollbar { width: 4px; }
+    #panel-settings::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    .settings-section {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px; margin-bottom: 10px;
+    }
+    .settings-section h3 {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--muted); margin-bottom: 10px; font-family: var(--mono);
+    }
+    .setting-row { margin-bottom: 10px; }
+    .setting-row:last-child { margin-bottom: 0; }
+    .setting-label { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 3px; display: block; }
+    .setting-desc  { font-size: 10px; color: var(--muted); margin-bottom: 5px; line-height: 1.5; font-family: var(--mono); }
+
+    .setting-input {
+      width: 100%; background: var(--bg2);
+      border: 1px solid var(--border); color: var(--text);
+      border-radius: var(--radius); padding: 6px 9px;
+      font-family: var(--mono); font-size: 11px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .setting-input:focus { border-color: var(--primary); }
+    .setting-input::placeholder { color: var(--muted); }
+    .setting-input[type="password"] { letter-spacing: 2px; }
+    .setting-input[type="password"]::placeholder { letter-spacing: 0; }
+
+    .save-btn {
+      width: 100%; padding: 8px; background: var(--primary-g);
+      color: #fff; border: none; border-radius: var(--radius);
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+      margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    .save-feedback {
+      text-align: center; font-size: 10px; font-family: var(--mono);
+      color: var(--green); margin-top: 6px; min-height: 14px;
+    }
+
+    .info-box {
+      background: rgba(79,140,255,0.06);
+      border: 1px solid rgba(79,140,255,0.18);
+      border-left: 3px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 9px 11px; font-size: 10.5px; font-family: var(--mono);
+      color: var(--muted2); line-height: 1.7; margin-bottom: 10px;
+    }
+    .info-box strong { color: var(--primary); }
+    .info-box code {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 3px; padding: 1px 5px; font-size: 10px;
+    }
+
+    /* ── About ── */
+    #panel-about { padding: 14px; overflow-y: auto; flex: 1; }
+    .about-logo { text-align: center; margin-bottom: 16px; }
+    .about-logo-mark {
+      width: 44px; height: 44px; background: var(--primary-g);
+      border-radius: 11px; display: inline-flex;
+      align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 900; color: #fff;
+      font-family: var(--sans); margin-bottom: 7px;
+    }
+    .about-title { font-size: 16px; font-weight: 900; letter-spacing: 4px; color: var(--text2); }
+    .about-tagline { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 3px; }
+
+    .feature-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .feature-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .feature-name { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .feature-desc { font-size: 10px; color: var(--muted); line-height: 1.55; font-family: var(--mono); }
+
+    .version-badge { text-align: center; font-size: 10px; font-family: var(--mono); color: var(--muted); margin-top: 12px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div id="header">
+    <div class="logo">
+      <div class="logo-mark">OX</div>
+      <span class="logo-text">ModelMirror</span>
+      <span class="logo-version">v1.1</span>
+    </div>
+    <button id="health-btn" title="Check server connection">
+      <div class="dot" id="server-dot"></div>
+      <span id="server-label">server</span>
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div id="tabs">
+    <div class="tab active" data-tab="analyze">analyze</div>
+    <div class="tab" data-tab="settings">settings</div>
+    <div class="tab" data-tab="about">about</div>
+  </div>
+
+  <!-- ── Analyze Tab ── -->
+  <div class="tab-panel active" id="tab-analyze">
+    <div id="panel-analyze">
+
+      <!-- Selection detected banner -->
+      <div id="selection-banner">
+        <span class="selection-icon">✂</span>
+        <div class="selection-info">
+          <div class="selection-label">Selection ready</div>
+          <div class="selection-preview" id="selection-preview">…</div>
+        </div>
+        <div class="selection-actions">
+          <button class="sel-btn sel-btn-use"     id="sel-use-btn">Load</button>
+          <button class="sel-btn sel-btn-dismiss" id="sel-dismiss-btn">✕</button>
+        </div>
+      </div>
+
+      <!-- Grab + Lang row -->
+      <div id="top-row">
+        <button id="grab-btn" title="Grab highlighted code from the page">
+          <div class="grab-pulse"></div>
+          Grab from page
+        </button>
+        <select id="lang-select">
+          <option value="">auto</option>
+          <option value="javascript">JS</option>
+          <option value="typescript">TS</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+          <option value="c">C</option>
+          <option value="go">Go</option>
+          <option value="rust">Rust</option>
+          <option value="php">PHP</option>
+          <option value="ruby">Ruby</option>
+          <option value="swift">Swift</option>
+          <option value="kotlin">Kotlin</option>
+          <option value="css">CSS</option>
+          <option value="html">HTML</option>
+          <option value="sql">SQL</option>
+          <option value="bash">Bash</option>
+        </select>
+      </div>
+
+      <!-- Editor -->
+      <div id="editor-wrap">
+        <textarea id="editor" placeholder="paste code here — or grab from page ↑" spellcheck="false"></textarea>
+        <span id="char-count">0 chars</span>
+      </div>
+
+      <!-- Action buttons -->
+      <div id="actions">
+        <button class="action-btn btn-explain"  id="btn-explain">💡 Explain</button>
+        <button class="action-btn btn-refactor" id="btn-refactor">🔧 Refactor</button>
+        <button class="action-btn btn-optimize" id="btn-optimize">⚡ Optimize</button>
+        <button class="action-btn btn-tests"    id="btn-tests">🧪 Tests</button>
+        <button class="action-btn btn-bugs"     id="btn-bugs">🐛 Issues</button>
+      </div>
+
+      <!-- Status -->
+      <div id="status">
+        <div class="spinner"></div>
+        <span id="status-text">ready</span>
+      </div>
+
+      <!-- Result -->
+      <div id="result">
+        <div class="placeholder-text">
+          grab or paste code → pick an action
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Settings Tab ── -->
+  <div class="tab-panel" id="tab-settings">
+    <div id="panel-settings">
+
+      <div class="info-box">
+        <strong>Local server required.</strong><br/>
+        Run <code>node server.js</code> in your project folder before using ModelMirror.
+      </div>
+
+      <div class="settings-section">
+        <h3>Server</h3>
+        <div class="setting-row">
+          <label class="setting-label">Server URL</label>
+          <div class="setting-desc">Default: http://localhost:3000</div>
+          <input class="setting-input" id="set-server-url" type="text" placeholder="http://localhost:3000" />
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>AI Model</h3>
+        <div class="setting-row">
+          <label class="setting-label">OpenRouter API Key</label>
+          <div class="setting-desc">openrouter.ai — stored locally only</div>
+          <input class="setting-input" id="set-api-key" type="password" placeholder="sk-or-v1-…" autocomplete="off" />
+        </div>
+        <div class="setting-row">
+          <label class="setting-label">Model</label>
+          <div class="setting-desc">OpenRouter model slug</div>
+          <input class="setting-input" id="set-model" type="text" placeholder="openai/gpt-4o-mini" />
+        </div>
+      </div>
+
+      <button class="save-btn" id="save-settings">Save Settings</button>
+      <div class="save-feedback" id="save-feedback"></div>
+
+    </div>
+  </div>
+
+  <!-- ── About Tab ── -->
+  <div class="tab-panel" id="tab-about">
+    <div id="panel-about">
+      <div class="about-logo">
+        <div class="about-logo-mark">OX</div>
+        <div class="about-title">ModelMirror</div>
+        <div class="about-tagline">ai-powered code companion</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">✂</div>
+        <div>
+          <div class="feature-name">Highlight &amp; Grab</div>
+          <div class="feature-desc">Select code on any webpage — lands in editor instantly.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💡</div>
+        <div>
+          <div class="feature-name">Explain</div>
+          <div class="feature-desc">Bullet-point breakdown of what the code does and how.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔧</div>
+        <div>
+          <div class="feature-name">Refactor</div>
+          <div class="feature-desc">Blunt structural feedback + cleaned-up code. No lectures.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div>
+          <div class="feature-name">Optimize</div>
+          <div class="feature-desc">Bottleneck analysis with Big-O. Before/after included.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧪</div>
+        <div>
+          <div class="feature-name">Generate Tests</div>
+          <div class="feature-desc">Happy path, null, boundary, throws. No boilerplate.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🐛</div>
+        <div>
+          <div class="feature-name">Find Bugs</div>
+          <div class="feature-desc">Logical errors & issues, severity-rated with exact fixes.</div>
+        </div>
+      </div>
+
+      <div class="version-badge">ModelMirror v1.1.0 · Manifest V3 · Chrome 116+</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="sidepanel.js"></script>
+</body>
+</html>
