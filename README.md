@@ -34,7 +34,7 @@ A web-based IDE built with **React + TypeScript + Vite** featuring AI-powered co
 - 📊 **Analytics:** Code activity tracking and heatmaps
 - 🎨 **Theme Support:** Dark/Light mode toggle
 
-### 2. **Orbix Chrome Extension** (`/chrome-extension`)
+### 2. **Model Mirror Chrome Extension** (`/chrome-extension`)
 A Chrome extension that brings ModelMirror's AI features directly to your browser.
 
 ```
@@ -228,17 +228,15 @@ Contributions welcome! Please:
 
 ---
 
-## 📄 License
 
-[Add your license here]
-
----
 
 ## 👤 Author
 
-**Gungun Jain**
-- GitHub: [@gungunjain11](https://github.com/gungunjain11)
+**Gungun Jain**, **Krati Mishra**, **Sanaya**
+- GitHub: [@gungunjain11](https://github.com/gungunjain11), [@KratiMishra21](https://github.com/KratiMishra21), [@Sanaya27](https://github.com/Sanaya27)
+- 
 - Repository: [ModelMirror](https://github.com/gungunjain11/ModelMirror)
+
 
 ---
 
@@ -251,4 +249,3 @@ For issues, questions, or suggestions:
 
 ---
 
-**Built with ❤️ using React, TypeScript, and AI**
