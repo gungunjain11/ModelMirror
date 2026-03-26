@@ -234,7 +234,6 @@ Contributions welcome! Please:
 
 **Gungun Jain**, **Krati Mishra**, **Sanaya**
 - GitHub: [@gungunjain11](https://github.com/gungunjain11), [@KratiMishra21](https://github.com/KratiMishra21), [@Sanaya27](https://github.com/Sanaya27)
-- 
 - Repository: [ModelMirror](https://github.com/gungunjain11/ModelMirror)
 
 
